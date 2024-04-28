@@ -1,5 +1,6 @@
 const core = require("@actions/core");
 const toolCache = require("@actions/tool-cache");
+const fs = require("fs-extra");
 const path = require("path");
 
 const { restoreRPCCache } = require("./cache");
@@ -20,8 +21,19 @@ async function main() {
     const extract = download.url.endsWith(".zip") ? toolCache.extractZip : toolCache.extractTar;
     const pathToCLI = await extract(pathToArchive);
 
+    // Append `-3074` to binaries inside download.binPath
+    const binPath = path.join(pathToCLI, download.binPath);
+
+    // loop over files in binPath
+    const files = fs.readdirSync(binPath);
+    for (const file of files) {
+      const filePath = path.join(binPath, file);
+      const newFilePath = path.join(binPath, `${file}-3074`);
+      fs.renameSync(filePath, newFilePath);
+    }
+
     // Expose the tool
-    core.addPath(path.join(pathToCLI, download.binPath));
+    core.addPath(binPath);
 
     // Get cache input
     const cache = core.getBooleanInput("cache");
